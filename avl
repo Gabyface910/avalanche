@@ -1,0 +1,134 @@
+#!/usr/bin/python3
+
+import argparse
+import os
+import sys
+import subprocess
+import time
+import platform
+import json
+
+def architecture():
+	machine = platform.machine().lower()
+	
+	if "aarch64" in machine or "arm64" in machine:
+		return "arm64"
+	elif "arm" in machine:
+		return "arm32"
+	else:
+		return "not_arm"
+
+def get_real_user_home():
+	"""Find the actual user's home directory, even when executing via sudo."""
+	sudo_user = os.environ.get("SUDO_USER")
+	if sudo_user:
+		# If run via sudo, expand the home directory of the original invoking user
+		return os.path.expanduser(f"~{sudo_user}")
+	return os.path.expanduser("~")
+
+# List of your custom application keys
+with open(f"{get_real_user_home()}/avalanche/apps-list.json", "r") as f:
+	CUSTOM_PACKAGES = json.load(f)
+
+def check_root():
+	"""Ensure the script is running with administrative privileges."""
+	if os.geteuid() != 0:
+		print("  ❌ Error: This app store requires administrative privileges.")
+		print("     Please run again using: sudo avl ...")
+		sys.exit(1)
+
+
+def handle_install(package):
+	"""Route package requests based on whether they are custom or official."""
+	if package in CUSTOM_PACKAGES:
+		print(f"  [!] Found custom package identifier: '{package}'")
+		
+		# Resolve the real user's home path safely
+		home_dir = get_real_user_home()
+		base_path = f"{home_dir}/avalanche/apps/{package}"
+		
+		arch = architecture()
+		if arch == "arm64": # FIXED: Added missing colon
+			script_path = f"{base_path}/install64"
+		elif arch == "arm32":
+			script_path = f"{base_path}/install32"
+		else:
+			print("  ❌ Error: Your CPU does not have an ARM architecture.")
+			print("     Avalanche is for ARM processors.")
+			sys.exit(1)
+			
+		try:
+			# FIXED: Correctly structured arguments without 'sudo' (already root) and avoided shell=True bugs
+			subprocess.run(
+				["sh", script_path],
+				check=True,
+				env={"DEBIAN_FRONTEND": "noninteractive"}
+			)
+		except subprocess.CalledProcessError:
+			print(f"  ❌ Error: The installation script at {script_path} failed.")
+			sys.exit(1)
+			
+		print(f"  ✅ Custom package [{package}] installed successfully.")
+	else:
+		print(f"  [!] '{package}' not found in custom library. Falling back to system APT...")
+		try:
+			# Using apt-get here keeps it consistent with handle_remove
+			subprocess.run(
+				["apt-get", "install", "-y", package],
+				check=True,
+				env={"DEBIAN_FRONTEND": "noninteractive"}
+			)
+			print(f"  ✅ System package '{package}' installed successfully via APT.")
+		except subprocess.CalledProcessError:
+			print(f"  ❌ Failed to install [{package}] via APT. Check package name or network connection.")
+
+def handle_remove(package):
+	"""Route removal requests based on package origin."""
+	if package in CUSTOM_PACKAGES:
+		print(f"[...] Removing custom package files for '{package}'...")
+		home_dir = get_real_user_home()
+		subprocess.run(
+			["sh", f"{home_dir}/avalanche/apps/{package}/uninstall"],
+			check=True,
+			env={"DEBIAN_FRONTEND": "noninteractive"}
+		)
+		print(f"  ✅ Package '{package}' removed.")
+	else:
+		print(f"  [...] Removing system package '{package}' via APT...")
+		try:
+			subprocess.run(["apt-get", "remove", "-y", package], check=True)
+			print(f"  ✅ System package '{package}' removed successfully via APT.")
+		except subprocess.CalledProcessError:
+			print(f"  ❌ Failed to remove '{package}' via APT.")
+
+def main():
+	parser = argparse.ArgumentParser(description="Hybrid App Store Client")
+	subparsers = parser.add_subparsers(dest="command", required=True)
+
+	# Install sub-command
+	install_parser = subparsers.add_parser("install", help="Install a custom or system package")
+	install_parser.add_argument("package", type=str, help="The package name")
+
+	# Remove sub-command
+	remove_parser = subparsers.add_parser("remove", help="Remove a custom or system package")
+	remove_parser.add_argument("package", type=str, help="The package name")
+
+	args = parser.parse_args()
+
+	# Enforce root privileges before running system modifiers
+	check_root()
+
+	if args.command == "install":
+		handle_install(args.package)
+	elif args.command == "remove":
+		handle_remove(args.package)
+
+if __name__ == "__main__":
+	if sys.stdout.encoding.lower() != 'utf-8':
+		try:
+			sys.stdout.reconfigure(encoding='utf-8')
+		except AttributeError:
+			import codecs
+			sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer)
+	
+	main()
