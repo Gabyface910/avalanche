@@ -113,6 +113,8 @@ def main():
 	remove_parser = subparsers.add_parser("remove", help="Remove a custom or system package")
 	remove_parser.add_argument("package", type=str, help="The package name")
 
+	update_parser = subparsers.add_parser("update", help="Updates the repository")
+
 	args = parser.parse_args()
 
 	# Enforce root privileges before running system modifiers
@@ -122,6 +124,9 @@ def main():
 		handle_install(args.package)
 	elif args.command == "remove":
 		handle_remove(args.package)
+	elif args.command == "update":
+		print("  [...] Uptating Avalanche...")
+		os.system(f"git -C {get_real_user_home()}/avalanche pull")
 
 if __name__ == "__main__":
 	if sys.stdout.encoding.lower() != 'utf-8':
