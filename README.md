@@ -1,5 +1,5 @@
 # Avalanche
-is a Raspberry Pi App Store (inspired by good 'ol pi-apps but newer)
+is a Raspberry Pi CLI app store (inspired by good 'ol pi-apps)
 
 When you make an Avalanche app, use this logo.
 
