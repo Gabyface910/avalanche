@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -e
+
+pip install ezpyupload --break-system-packages
+echo "Run ezpyupload with python3 -m ezpyupload."

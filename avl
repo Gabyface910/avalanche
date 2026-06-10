@@ -15,8 +15,10 @@ def architecture():
 		return "arm64"
 	elif "arm" in machine:
 		return "arm32"
+	elif machine in ["amd64", "x86_64"]:
+		return "amd64"
 	else:
-		return "not_arm"
+		return "unsupported"
 
 def get_real_user_home():
 	"""Find the actual user's home directory, even when executing via sudo."""
@@ -52,9 +54,11 @@ def handle_install(package):
 			script_path = f"{base_path}/install64"
 		elif arch == "arm32":
 			script_path = f"{base_path}/install32"
+		elif arch == "amd64":
+			script_path = f"{base_path}/installamd"
 		else:
-			print("  ❌ Error: Your CPU does not have an ARM architecture.")
-			print("     Avalanche is for ARM processors.")
+			print("  ❌ Error: Your CPU does not have an ARM or AMD64 architecture.")
+			print("     Avalanche is for ARM and AMD processors.")
 			sys.exit(1)
 			
 		try:
