@@ -84,7 +84,7 @@ def handle_install(package):
 			)
 			print(f"  ✅ System package '{package}' installed successfully via APT.")
 		except subprocess.CalledProcessError:
-			print(f"  ❌ Failed to install [{package}] via APT. Check package name or network connection.")
+			print(f"  ❌ Failed to install '{package}' via APT. Check package name or network connection.")
 
 def handle_remove(package):
 	"""Route removal requests based on package origin."""
