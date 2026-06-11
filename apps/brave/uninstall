@@ -1,0 +1,10 @@
+#!/bin/bash
+
+echo "\033[1;32mRemoving packages...\033[0m"
+sudo apt purge brave-browser -y
+echo "\033[1;32mDeleting unnecessary files...\033[0m"
+sudo apt autoremove -y
+echo "\033[1;32mRemoving configuration files...\033[0m"
+sudo rm -rf ~/.config/BraveSoftware
+sudo rm /etc/apt/sources.list.d/brave-browser-*.list
+sudo rm /usr/share/keyrings/brave-browser-archive-keyring.gpg
