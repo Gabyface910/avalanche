@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 import argparse
 import os
 import sys
@@ -32,6 +31,8 @@ def get_real_user_home():
 with open(f"{get_real_user_home()}/avalanche/apps-list.json", "r") as f:
 	CUSTOM_PACKAGES = json.load(f)
 
+
+
 def check_root():
 	"""Ensure the script is running with administrative privileges."""
 	if os.geteuid() != 0:
@@ -41,38 +42,48 @@ def check_root():
 
 
 def handle_install(package):
+	with open(f"{get_real_user_home()}/.avl-app-list.json", "r") as f:
+		installed = json.load(f)
 	"""Route package requests based on whether they are custom or official."""
 	if package in CUSTOM_PACKAGES:
 		print(f"  [!] Found custom package identifier: '{package}'")
-		
-		# Resolve the real user's home path safely
-		home_dir = get_real_user_home()
-		base_path = f"{home_dir}/avalanche/apps/{package}"
-		
-		arch = architecture()
-		if arch == "arm64": # FIXED: Added missing colon
-			script_path = f"{base_path}/install64"
-		elif arch == "arm32":
-			script_path = f"{base_path}/install32"
-		elif arch == "amd64":
-			script_path = f"{base_path}/installamd"
+		if package in installed:
+			print(f"  [!] It seems as if you already have installed '{package}'.")
+			print(f"      It would be unwise to install it while it is already installed.")
+			print(f"      Therefore, the installation of the '{package}' package has been canceled.")
+			sys.exit(0)
 		else:
-			print("  ❌ Error: Your CPU does not have an ARM or AMD64 architecture.")
-			print("     Avalanche is for ARM and AMD processors.")
-			sys.exit(1)
+			# Resolve the real user's home path safely
+			home_dir = get_real_user_home()
+			base_path = f"{home_dir}/avalanche/apps/{package}"
 			
-		try:
-			# FIXED: Correctly structured arguments without 'sudo' (already root) and avoided shell=True bugs
-			subprocess.run(
-				["sh", script_path],
-				check=True,
-				env={"DEBIAN_FRONTEND": "noninteractive"}
-			)
-		except subprocess.CalledProcessError:
-			print(f"  ❌ Error: The installation script at {script_path} failed.")
-			sys.exit(1)
-			
-		print(f"  ✅ Custom package [{package}] installed successfully.")
+			arch = architecture()
+			if arch == "arm64": # FIXED: Added missing colon
+				script_path = f"{base_path}/install64"
+			elif arch == "arm32":
+				script_path = f"{base_path}/install32"
+			elif arch == "amd64":
+				script_path = f"{base_path}/installamd"
+			else:
+				print("  ❌ Error: Your CPU does not have an ARM or AMD64 architecture.")
+				print("     Avalanche is for ARM and AMD processors.")
+				sys.exit(1)
+				
+			try:
+				# FIXED: Correctly structured arguments without 'sudo' (already root) and avoided shell=True bugs
+				subprocess.run(
+					["sh", script_path],
+					check=True,
+					env={"DEBIAN_FRONTEND": "noninteractive"}
+				)
+			except subprocess.CalledProcessError:
+				print(f"  ❌ Error: The installation script at {script_path} failed.")
+				sys.exit(1)
+			print(f"  [...] Letting the script know you have installed it...")
+			installed.append(package)
+			with open(f"{get_real_user_home()}/.avl-app-list.json", "w") as f:
+				json.dump(installed, f, indent=4)
+			print(f"  ✅ Custom package [{package}] installed successfully.")
 	else:
 		print(f"  [!] '{package}' not found in custom library. Falling back to system APT...")
 		try:
@@ -89,6 +100,13 @@ def handle_install(package):
 def handle_remove(package):
 	"""Route removal requests based on package origin."""
 	if package in CUSTOM_PACKAGES:
+		with open(f"{get_real_user_home()}/.avl-app-list.json", "r") as f:
+			installed = json.load(f)
+		if not package in installed:
+			print(f"  [!] It seems as if you haven't installed the '{package}' package.")
+			print(f"      Therefore, it cannot be removed.")
+			print(f"      If you want to install it, run 'sudo avl install {package}'.")
+			sys.exit(1)
 		print(f"[...] Removing custom package files for '{package}'...")
 		home_dir = get_real_user_home()
 		subprocess.run(
@@ -96,6 +114,10 @@ def handle_remove(package):
 			check=True,
 			env={"DEBIAN_FRONTEND": "noninteractive"}
 		)
+		print(f"  [...] Telling the system that the '{package}' has been removed...")
+		installed.remove(package)
+			with open(f"{get_real_user_home()}/.avl-app-list.json", "w") as f:
+				json.dump(installed, f, indent=4)
 		print(f"  ✅ Package '{package}' removed.")
 	else:
 		print(f"  [...] Removing system package '{package}' via APT...")
