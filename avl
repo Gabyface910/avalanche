@@ -116,8 +116,8 @@ def handle_remove(package):
 		)
 		print(f"  [...] Telling the system that the '{package}' has been removed...")
 		installed.remove(package)
-			with open(f"{get_real_user_home()}/.avl-app-list.json", "w") as f:
-				json.dump(installed, f, indent=4)
+		with open(f"{get_real_user_home()}/.avl-app-list.json", "w") as f:
+			json.dump(installed, f, indent=4)
 		print(f"  ✅ Package '{package}' removed.")
 	else:
 		print(f"  [...] Removing system package '{package}' via APT...")

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -e
+
+echo "\033[32mRunning \033[1msudo apt update...\033[0m"
+sudo apt update -y
+echo "\033[32mDownloading necessary files...\033[0m"
+mkdir -p /tmp/avalanche
+wget -P /tmp/avalanche https://raw.githubusercontent.com/Gabyface910/debiantrail/refs/heads/main/oregontrail.deb
+echo "\033[32mInstalling the packages...\033[0m"
+sudo apt install /tmp/avalanche/oregontrail.deb -y
+echo "\033[32mCleaning up...\033[0m"
+rm -rf /tmp/avalanche
+echo "\033[32mMaking executable...\033[0m"
+chmod +x /usr/games/oregontrail
