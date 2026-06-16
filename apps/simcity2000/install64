@@ -13,3 +13,5 @@ echo "\033[32mCleaning up...\033[0m"
 rm -rf /tmp/avalanche
 echo "\033[32mMaking executable...\033[0m"
 chmod +x /usr/games/simcity
+chmod -R +w /usr/share/simcity2000
+chmod -R +x /usr/share/simcity2000
