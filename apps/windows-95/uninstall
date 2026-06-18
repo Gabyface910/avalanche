@@ -1,0 +1,3 @@
+#!/bin/bash
+
+sudo apt remove windows-95 -y
